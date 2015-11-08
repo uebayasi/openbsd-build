@@ -7,13 +7,10 @@
 set -e
 #set -vx
 
-prog=$0
-
-_build_vars=
-
 ###
 ### obtools, obdistrib
 ###
+_build_prog=$0
 _build_sudo=/usr/bin/doas
 _build_make_njobs=-j4
 _build_make() {
@@ -160,6 +157,7 @@ obshell() {
 		echo t=$t
 		echo 'PATH=$t/bin:$PATH'
 		echo 'PS1="obbuild> "'
+		echo "m() { /usr/bin/make -m $s/share/mk ${_build_make_njobs} \$@; }"
 	} >$_env
 	env ENV=$_env /bin/sh -i
 	rm -f $_env
@@ -170,7 +168,7 @@ obshell() {
 ###
 buildenv() {
 	d=$( pwd -P )
-	s=$( cd "${prog%/*}" && pwd -P )
+	s=$( cd "${_build_prog%/*}" && pwd -P )
 
 	# check dirs
 	if [ ! -n "$s" ]; then
