@@ -147,7 +147,6 @@ obshell() {
 	local _env=$( mktemp /tmp/XXXXXX )
 
 	{
-		echo b=$b
 		echo a=$a
 		echo s=$s
 		echo ks=$ks
@@ -156,7 +155,12 @@ obshell() {
 		echo ko=$ko
 		echo t=$t
 		echo 'PATH=$t/bin:$PATH'
-		echo 'PS1="obbuild> "'
+		echo "PS1='${t##*/}@$d
+ s=$s
+ o=$o
+ks=$ks
+ko=$ko
+% '"
 		echo "m() { /usr/bin/make -m $s/share/mk ${_build_make_njobs} \$@; }"
 	} >$_env
 	env ENV=$_env /bin/sh -i
@@ -186,11 +190,6 @@ buildenv() {
 	#a=${a##*.}
 	# XXX
 	a=amd64
-	#b=$(basename $d)
-	#b=${b#dest.}
-	#b=${b%%.*}
-	# XXX
-	b=cvs
 	#s=/src/openbsd/src.$b.src
 	o=$d/usr/obj
 	ks=$s/sys/arch/$a
@@ -224,7 +223,6 @@ buildenv() {
 
 	OPS1=$PS1
 	PS1="%B%m:%/%b
- b=$b
  a=$a
  s=$s
 ks=$ks
