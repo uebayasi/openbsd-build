@@ -144,6 +144,28 @@ obcvsup() {
 }
 
 ###
+### obshell
+###
+obshell() {
+	local _env=$( mktemp /tmp/XXXXXX )
+
+	{
+		echo b=$b
+		echo a=$a
+		echo s=$s
+		echo ks=$ks
+		echo d=$d
+		echo o=$o
+		echo ko=$ko
+		echo t=$t
+		echo 'PATH=$t/bin:$PATH'
+		echo 'PS1="obbuild> "'
+	} >$_env
+	env ENV=$_env /bin/sh
+	rm -f $_env
+}
+
+###
 ### buildenv, unbuildenv
 ###
 buildenv() {
@@ -202,8 +224,8 @@ buildenv() {
 	OPATH=$PATH
 	PATH=$t/bin:$PATH
 
-	OPROMPT=$PROMPT
-	PROMPT="%B%m:%/%b
+	OPS1=$PS1
+	PS1="%B%m:%/%b
  b=$b
  a=$a
  s=$s
@@ -216,7 +238,7 @@ ko=$ko
 }
 unbuildenv() {
 	PATH=$OPATH
-	PROMPT=$OPROMPT
+	PS1=$OPS1
 	unset b a s ks d o ko t
 }
 m() {
