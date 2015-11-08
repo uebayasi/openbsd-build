@@ -161,7 +161,7 @@ obshell() {
 		echo 'PATH=$t/bin:$PATH'
 		echo 'PS1="obbuild> "'
 	} >$_env
-	env ENV=$_env /bin/sh
+	env ENV=$_env /bin/sh -i
 	rm -f $_env
 }
 
