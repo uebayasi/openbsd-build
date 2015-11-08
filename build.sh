@@ -147,14 +147,10 @@ obcvsup() {
 ### buildenv, unbuildenv
 ###
 buildenv() {
-	echo Start
-	echo $prog
-	echo Args: "$@"
 	d=$( pwd -P )
 	s=$( cd "${prog%/*}" && pwd -P )
 
 	# check dirs
-	echo Check
 	if [ ! -n "$s" ]; then
 		return 1
 	elif [ ! -d "$s" ]; then
@@ -196,10 +192,10 @@ buildenv() {
 
 	CROSSDIR=$d
 	TARGET=$a
-	BSDSRCDIR=$s
-	export CROSSDIR TARGET BSDSRCDIR
+	export CROSSDIR TARGET
 
-	_build_env="/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin"
+	# XXX ${BSDSRCDIR} is used in a few places
+	_build_env="/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin BSDSRCDIR=$s"
 
 	t=${CC%/*/*}
 
