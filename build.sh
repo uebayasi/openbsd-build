@@ -155,6 +155,13 @@ obshell() {
 ### buildenv, unbuildenv
 ###
 buildenv() {
+	# set arch
+	if [ -n "${TARGET}" ]; then
+		a=$TARGET
+	else
+		a=$( uname -m )
+	fi
+
 	# set dirs
 	d=$( pwd -P )
 	if [ "${_build_prog}" != "/bin/sh" ]; then
@@ -163,8 +170,6 @@ buildenv() {
 		s=${BSDSRCDIR}
 	fi
 	o=$d/usr/obj
-	# XXX
-	a=amd64
 	ks=$s/sys/arch/$a
 	ko=$o/sys/arch/$a
 
