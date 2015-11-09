@@ -221,7 +221,7 @@ ko=$ko
 unbuildenv() {
 	PATH=$OPATH
 	PS1=$OPS1
-	unset a s ks d o ko t
+	unset a d s ks o ko t
 }
 m() {
 	$_build_make "$@"
