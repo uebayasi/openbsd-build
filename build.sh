@@ -19,20 +19,20 @@ _build_config=
 
 obdirs() {
 	cd $s
-	eval $_build_sudo \
+	$_build_sudo \
 	    $_build_env \
-	    ${_build_make} CROSSDIR=$d TARGET=$a cross-dirs
+	    $_build_make CROSSDIR=$d TARGET=$a cross-dirs
 	cd $OLDPWD
 }
 
 obtools() {
 	cd $s
-	eval $_build_sudo \
+	$_build_sudo \
 	    $_build_env \
-	    ${_build_make} CROSSDIR=$d TARGET=$a cross-obj
-	eval $_build_sudo \
+	    $_build_make CROSSDIR=$d TARGET=$a cross-obj
+	$_build_sudo \
 	    $_build_env \
-	    ${_build_make} CROSSDIR=$d TARGET=$a cross-tools
+	    $_build_make CROSSDIR=$d TARGET=$a cross-tools
 	cd $OLDPWD
 
 	cd $s/usr.sbin/config
@@ -45,14 +45,14 @@ obtools() {
 
 obdistrib() {
 	cd $s
-	eval $_build_sudo \
+	$_build_sudo \
 	    $_build_env \
-	    ${_build_make} CROSSDIR=$d TARGET=$a cross-distrib
+	    $_build_make CROSSDIR=$d TARGET=$a cross-distrib
 	cd $OLDPWD
 }
 
 obreset() {
-	eval $_build_sudo rm -f $d/.*_done
+	$_build_sudo rm -f $d/.*_done
 }
 
 obsetperm() {
@@ -81,7 +81,7 @@ _obkernel() {
 	cd $ko/compile/${_obkernel_conf}
 	printf '===> cd %s\n' "$(pwd)"
 	printf '===> kernel build start: %s\n' "$(date)"
-	$_sudo ${_build_make} DEBUG=-g $@
+	$_sudo $_build_make DEBUG=-g $@
 	printf '===> kernel build end: %s\n' "$(date)"
 	cd $OLDPWD
 	printf '===> cd %s\n' "$(pwd)"
@@ -155,12 +155,22 @@ obshell() {
 ### buildenv, unbuildenv
 ###
 buildenv() {
+	# set dirs
 	d=$( pwd -P )
 	if [ "${_build_prog}" != "/bin/sh" ]; then
 		s=$( cd "${_build_prog%/*}" && pwd -P )
 	else
 		s=${BSDSRCDIR}
 	fi
+	o=$d/usr/obj
+	# XXX
+	a=amd64
+	ks=$s/sys/arch/$a
+	ko=$o/sys/arch/$a
+
+	# XXX ${BSDSRCDIR} is used in a few places
+	_build_env="/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin BSDSRCDIR=$s"
+	_build_make="/usr/bin/make -m $s/share/mk ${_build_make_njobs}"
 
 	# check dirs
 	if [ ! -n "$s" ]; then
@@ -173,16 +183,6 @@ buildenv() {
 		return 1
 	fi
 
-	# set dirs
-	#a=$(basename $d)
-	#a=${a##*.}
-	# XXX
-	a=amd64
-	#s=/src/openbsd/src.$b.src
-	o=$d/usr/obj
-	ks=$s/sys/arch/$a
-	ko=$o/sys/arch/$a
-
 	if [ ! -e $d/TARGET_CANON ]; then
 		obdirs
 	fi
@@ -190,14 +190,9 @@ buildenv() {
 		return 1
 	fi
 
-	# XXX ${BSDSRCDIR} is used in a few places
-	_build_env="/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin BSDSRCDIR=$s"
-	_build_make="/usr/bin/make -m $s/share/mk ${_build_make_njobs}"
-
 	cd $s
 	eval export $(
-		$_build_env \
-		    ${_build_make} CROSSDIR=$d TARGET=$a cross-env
+		$_build_env $_build_make CROSSDIR=$d TARGET=$a cross-env
 	)
 	cd $OLDPWD
 
@@ -224,7 +219,7 @@ unbuildenv() {
 	unset a s ks d o ko t
 }
 m() {
-	${_build_make} "$@"
+	$_build_make "$@"
 }
 
 usage() {
@@ -240,10 +235,12 @@ usage() {
 if [ $# -eq 0 ]; then
 	case "${ENV}" in
 	/tmp/build.sh.*)
+		# interactive mode; this file is read as ${ENV}; don't exit!
 		buildenv
 		;;
 	*)
 		obshell
+		exit $?
 		;;
 	esac
 else
@@ -252,5 +249,5 @@ else
 		eval $1
 		shift
 	done
-	exit 0
+	exit $?
 fi
