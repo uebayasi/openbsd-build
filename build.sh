@@ -4,7 +4,7 @@
 ### build.sh - OpenBSD build script
 ###
 
-set -e
+#set -e
 #set -vx
 
 ###
@@ -18,38 +18,59 @@ _build_make=
 _build_config=
 _build_kernel_conf=GENERIC.MP
 
-obdirs() {
-	cd $s
+###
+### m, sm, x, sx
+###
+
+m() {
+	$_build_env $_build_make "$@"
+}
+
+sm() {
 	$_build_sudo \
-	    $_build_env \
-	    $_build_make CROSSDIR=$d TARGET=$a cross-dirs
+	$_build_env $_build_make "$@"
+}
+
+x() {
+	cd $s
+	$_build_env \
+	$_build_make CROSSDIR=$d TARGET=$a "$@"
 	cd $OLDPWD
 }
 
-obtools() {
+sx() {
 	cd $s
 	$_build_sudo \
-	    $_build_env \
-	    $_build_make CROSSDIR=$d TARGET=$a cross-obj
-	$_build_sudo \
-	    $_build_env \
-	    $_build_make CROSSDIR=$d TARGET=$a cross-tools
+	$_build_env \
+	$_build_make CROSSDIR=$d TARGET=$a "$@"
 	cd $OLDPWD
+}
+
+###
+### obdirs
+### obtools
+### obdistrib
+### obreset
+###
+
+obdirs() {
+	sx cross-dirs
+}
+
+obtools() {
+	sx cross-obj
+	sx cross-tools
 
 	cd $s/usr.sbin/config
-	$_build_env make clean
-	$_build_env make depend
-	$_build_env make all
+	$_build_sudo $_build_env $_build_make clean
+	$_build_sudo $_build_env $_build_make depend
+	$_build_sudo $_build_env $_build_make all
 	$_build_sudo cp ./config $t/bin
 	cd $OLDPWD
 }
 
 obdistrib() {
-	cd $s
-	$_build_sudo \
-	    $_build_env \
-	    $_build_make CROSSDIR=$d TARGET=$a cross-distrib
-	cd $OLDPWD
+	sx cross-distrib
 }
 
 obreset() {
@@ -184,6 +205,7 @@ buildenv() {
 	ks=$s/sys/arch/$a
 	ko=$o/sys/arch/$a
 
+	# XXX ${CROSSDIR} and ${TARGET} should not be used in the tree
 	# XXX ${BSDSRCDIR} is used in a few places
 	_build_env="/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin BSDSRCDIR=$s"
 	_build_make="/usr/bin/make -m $s/share/mk ${_build_make_njobs}"
@@ -208,13 +230,9 @@ buildenv() {
 
 	cd $s
 	eval export $(
-		$_build_env $_build_make CROSSDIR=$d TARGET=$a cross-env
+		x cross-env
 	)
 	cd $OLDPWD
-
-	CROSSDIR=$d
-	TARGET=$a
-	export CROSSDIR TARGET
 
 	t=${CC%/*/*}
 
@@ -228,9 +246,6 @@ unbuildenv() {
 	PATH=$OPATH
 	PS1=$OPS1
 	unset a d s ks o ko t
-}
-m() {
-	$_build_make "$@"
 }
 
 usage() {
