@@ -4,12 +4,11 @@ OpenBSD simple build wrapper
 USAGE
 
 ```
-% mkdir -p src/openbsd/dest
-% cd src/openbsd
-% cvs co src
-% git clone openbsd-build.sh obbuild
-% cd src
-% ln -sf ../obbuild/build.sh .
-% cd ../dest
-% ../src/build.sh obtools
+% cd /tmp
+% git clone github.com:uebayasi/openbsd-build.sh.git obbuild
+% cd /usr/src
+% doas ln -sf /tmp/obbuild/build.sh .
+% doas mkdir /usr/cross
+% cd /usr/cross
+% /usr/src/build.sh obtools
 ```
