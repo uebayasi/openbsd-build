@@ -12,17 +12,16 @@ set -e
 ###
 _build_prog=$0
 _build_sudo=/usr/bin/doas
-_build_make_njobs=-j4
-_build_make() {
-	/usr/bin/make -m $s/share/mk ${_build_make_njobs} "$@"
-}
 _build_env=
+_build_make_njobs=-j4
+_build_make=
+_build_config=
 
 obdirs() {
 	cd $s
 	eval $_build_sudo \
 	    $_build_env \
-	    /usr/bin/make -j4 -m $s/share/mk CROSSDIR=$d TARGET=$a cross-dirs
+	    ${_build_make} CROSSDIR=$d TARGET=$a cross-dirs
 	cd $OLDPWD
 }
 
@@ -30,10 +29,10 @@ obtools() {
 	cd $s
 	eval $_build_sudo \
 	    $_build_env \
-	    /usr/bin/make -j4 -m $s/share/mk CROSSDIR=$d TARGET=$a cross-obj
+	    ${_build_make} CROSSDIR=$d TARGET=$a cross-obj
 	eval $_build_sudo \
 	    $_build_env \
-	    /usr/bin/make -j4 -m $s/share/mk CROSSDIR=$d TARGET=$a cross-tools
+	    ${_build_make} CROSSDIR=$d TARGET=$a cross-tools
 	cd $OLDPWD
 
 	cd $s/usr.sbin/config
@@ -48,7 +47,7 @@ obdistrib() {
 	cd $s
 	eval $_build_sudo \
 	    $_build_env \
-	    /usr/bin/make -j4 -m $s/share/mk CROSSDIR=$d TARGET=$a cross-distrib
+	    ${_build_make} CROSSDIR=$d TARGET=$a cross-distrib
 	cd $OLDPWD
 }
 
@@ -74,6 +73,7 @@ _obkernel() {
 	$_build_sudo mkdir -p $ko/compile/${_obkernel_conf}
 	$_build_sudo chown -R :wsrc $ko
 	$_build_sudo chmod -R g+w $ko
+	# XXX ${_build_config}
 	$t/bin/config -s $s/sys -b $ko/compile/${_obkernel_conf} ${_obkernel_conf}
 	cd $OLDPWD
 
@@ -81,7 +81,7 @@ _obkernel() {
 	cd $ko/compile/${_obkernel_conf}
 	printf '===> cd %s\n' "$(pwd)"
 	printf '===> kernel build start: %s\n' "$(date)"
-	$_sudo /usr/bin/make -m $s/share/mk -j4 DEBUG=-g $@
+	$_sudo ${_build_make} DEBUG=-g $@
 	printf '===> kernel build end: %s\n' "$(date)"
 	cd $OLDPWD
 	printf '===> cd %s\n' "$(pwd)"
@@ -144,26 +144,10 @@ obcvsup() {
 ### obshell
 ###
 obshell() {
-	local _env=$( mktemp /tmp/XXXXXX )
+	local _env=$( mktemp /tmp/build.sh.XXXXXX )
 
-	{
-		echo a=$a
-		echo s=$s
-		echo ks=$ks
-		echo d=$d
-		echo o=$o
-		echo ko=$ko
-		echo t=$t
-		echo 'PATH=$t/bin:$PATH'
-		echo "PS1='${t##*/}@$d
- s=$s
- o=$o
-ks=$ks
-ko=$ko
-% '"
-		echo "m() { /usr/bin/make -m $s/share/mk ${_build_make_njobs} \$@; }"
-	} >$_env
-	env ENV=$_env /bin/sh -i
+	cp $_build_prog $_env
+	env ENV=$_env BSDSRCDIR=$( cd "${_build_prog%/*}" && pwd -P ) /bin/sh -i
 	rm -f $_env
 }
 
@@ -172,7 +156,11 @@ ko=$ko
 ###
 buildenv() {
 	d=$( pwd -P )
-	s=$( cd "${_build_prog%/*}" && pwd -P )
+	if [ "${_build_prog}" != "/bin/sh" ]; then
+		s=$( cd "${_build_prog%/*}" && pwd -P )
+	else
+		s=${BSDSRCDIR}
+	fi
 
 	# check dirs
 	if [ ! -n "$s" ]; then
@@ -202,10 +190,14 @@ buildenv() {
 		return 1
 	fi
 
+	# XXX ${BSDSRCDIR} is used in a few places
+	_build_env="/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin BSDSRCDIR=$s"
+	_build_make="/usr/bin/make -m $s/share/mk ${_build_make_njobs}"
+
 	cd $s
 	eval export $(
 		$_build_env \
-		    /usr/bin/make -m $s/share/mk CROSSDIR=$d TARGET=$a cross-env
+		    ${_build_make} CROSSDIR=$d TARGET=$a cross-env
 	)
 	cd $OLDPWD
 
@@ -213,32 +205,26 @@ buildenv() {
 	TARGET=$a
 	export CROSSDIR TARGET
 
-	# XXX ${BSDSRCDIR} is used in a few places
-	_build_env="/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin BSDSRCDIR=$s"
-
 	t=${CC%/*/*}
 
 	OPATH=$PATH
 	PATH=$t/bin:$PATH
 
 	OPS1=$PS1
-	PS1="%B%m:%/%b
- a=$a
+	PS1="${t##*/}@$d
  s=$s
-ks=$ks
- d=$d
  o=$o
+ks=$ks
 ko=$ko
- t=$t
-%% "
+% "
 }
 unbuildenv() {
 	PATH=$OPATH
 	PS1=$OPS1
-	unset b a s ks d o ko t
+	unset a s ks d o ko t
 }
 m() {
-	/usr/bin/make -m $s/share/mk -j4 "$@"
+	${_build_make} "$@"
 }
 
 usage() {
@@ -252,12 +238,19 @@ usage() {
 ### main
 ###
 if [ $# -eq 0 ]; then
-	usage
+	case "${ENV}" in
+	/tmp/build.sh.*)
+		buildenv
+		;;
+	*)
+		obshell
+		;;
+	esac
 else
 	buildenv
 	while [ $# -gt 0 ]; do
 		eval $1
 		shift
 	done
+	exit 0
 fi
-exit 0
