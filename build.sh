@@ -16,6 +16,7 @@ _build_env=
 _build_make_njobs=-j4
 _build_make=
 _build_config=
+_build_kernel_conf=GENERIC.MP
 
 obdirs() {
 	cd $s
@@ -63,22 +64,21 @@ obsetperm() {
 ###
 ### obkernel
 ###
-_obkernel_conf=GENERIC.MP
 _obkernel() {
 	local _sudo
 	_sudo=$1
 	shift
 
 	cd $s/sys/arch/$a/conf
-	$_build_sudo mkdir -p $ko/compile/${_obkernel_conf}
+	$_build_sudo mkdir -p $ko/compile/${_build_kernel_conf}
 	$_build_sudo chown -R :wsrc $ko
 	$_build_sudo chmod -R g+w $ko
 	# XXX ${_build_config}
-	$t/bin/config -s $s/sys -b $ko/compile/${_obkernel_conf} ${_obkernel_conf}
+	$t/bin/config -s $s/sys -b $ko/compile/${_build_kernel_conf} ${_build_kernel_conf}
 	cd $OLDPWD
 
-	#cd $s/sys/arch/$a/compile/${_obkernel_conf}
-	cd $ko/compile/${_obkernel_conf}
+	#cd $s/sys/arch/$a/compile/${_build_kernel_conf}
+	cd $ko/compile/${_build_kernel_conf}
 	printf '===> cd %s\n' "$(pwd)"
 	printf '===> kernel build start: %s\n' "$(date)"
 	$_sudo $_build_make DEBUG=-g $@
@@ -89,14 +89,14 @@ _obkernel() {
 }
 obkernel() {
 	if [ $# -gt 0 ]; then
-		_obkernel_conf=$1
+		_build_kernel_conf=$1
 	fi
 	_obkernel ""
 	return 0
 }
 obkernelinstall() {
 	if [ $# -gt 0 ]; then
-		_obkernel_conf=$1
+		_build_kernel_conf=$1
 	fi
 	_obkernel $_build_sudo install
 	return 0
@@ -108,12 +108,13 @@ obkernelconf() {
 		echo >&2 "File not exist: ${_conf}"
 		return 1
 	fi
-	_obkernel_conf="$1"
+	_build_kernel_conf="$1"
+	rebuildenv
 	return 0
 }
 obkernelclean() {
-	rm -fr $o/sys/arch/$a/compile/${_obkernel_conf}
-	mkdir -p $o/sys/arch/$a/compile/${_obkernel_conf}
+	rm -fr $o/sys/arch/$a/compile/${_build_kernel_conf}
+	mkdir -p $o/sys/arch/$a/compile/${_build_kernel_conf}
 }
 
 ###
@@ -149,6 +150,16 @@ obshell() {
 	cp $_build_prog $_env
 	env ENV=$_env BSDSRCDIR=$( cd "${_build_prog%/*}" && pwd -P ) /bin/sh -i
 	rm -f $_env
+}
+
+rebuildenv() {
+	PS1="${t##*/}@$d
+ s=$s
+ o=$o
+ks=$ks
+ko=$ko
+cf=${_build_kernel_conf}
+% "
 }
 
 ###
@@ -211,12 +222,7 @@ buildenv() {
 	PATH=$t/bin:$PATH
 
 	OPS1=$PS1
-	PS1="${t##*/}@$d
- s=$s
- o=$o
-ks=$ks
-ko=$ko
-% "
+	rebuildenv
 }
 unbuildenv() {
 	PATH=$OPATH
