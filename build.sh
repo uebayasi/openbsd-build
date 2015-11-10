@@ -169,7 +169,8 @@ obshell() {
 	local _env=$( mktemp /tmp/build.sh.XXXXXX )
 
 	cp $_build_prog $_env
-	env ENV=$_env BSDSRCDIR=$( cd "${_build_prog%/*}" && pwd -P ) /bin/sh -i
+	# give interactive shell ${BSDSRCDIR}
+	env ENV=$_env BSDSRCDIR=$s /bin/sh -i
 	rm -f $_env
 }
 
@@ -196,10 +197,11 @@ buildenv() {
 
 	# set dirs
 	d=$( pwd -P )
-	if [ "${_build_prog}" != "/bin/sh" ]; then
-		s=$( cd "${_build_prog%/*}" && pwd -P )
-	else
+	if [ "${_build_prog}" = "/bin/sh" ]; then
+		# interactive shell; ${BSDSRCDIR} is given
 		s=${BSDSRCDIR}
+	else
+		s=$( cd "${_build_prog%/*}" && pwd -P )
 	fi
 	o=$d/usr/obj
 	ks=$s/sys/arch/$a
@@ -259,12 +261,13 @@ usage() {
 ### main
 ###
 if [ $# -eq 0 ]; then
+	buildenv
 	case "${ENV}" in
 	/tmp/build.sh.*)
-		# interactive mode; this file is read as ${ENV}; don't exit!
-		buildenv
+		# interactive shell; this file is read as ${ENV}; don't exit!
 		;;
 	*)
+		# entering interactive mode!
 		obshell
 		exit $?
 		;;
