@@ -1,5 +1,5 @@
-# openbsd-build.sh
-OpenBSD simple build wrapper
+# openbsd-build
+OpenBSD simple build wrapper (build.sh)
 
 USAGE
 
