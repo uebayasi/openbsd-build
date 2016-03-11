@@ -55,6 +55,7 @@ sx() {
 
 obdirs() {
 	sx cross-dirs
+	obsetperm
 }
 
 obtools() {
