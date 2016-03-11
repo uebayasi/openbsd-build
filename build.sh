@@ -66,6 +66,7 @@ obtools() {
 	$_build_sudo $_build_env $_build_make depend
 	$_build_sudo $_build_env $_build_make all
 	$_build_sudo cp ./config $t/bin
+	$_build_sudo $_build_env $_build_make cleandir
 	cd $OLDPWD
 }
 
