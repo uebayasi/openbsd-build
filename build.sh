@@ -182,7 +182,6 @@ rebuildenv() {
  o=$o
 ks=$ks
 ko=$ko
-cf=${_build_kernel_conf}
 % "
 }
 
@@ -208,6 +207,8 @@ buildenv() {
 	o=$d/usr/obj
 	ks=$s/sys/arch/$a
 	ko=$o/sys/arch/$a
+	kb=$ko/compile/${_build_kernel_conf}
+	k=$kb/bsd
 
 	# XXX ${CROSSDIR} and ${TARGET} should not be used in the tree
 	# XXX ${BSDSRCDIR} is used in a few places
