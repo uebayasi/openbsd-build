@@ -1,5 +1,5 @@
 diff --git a/Makefile.cross b/Makefile.cross
-index 8e2afa1..f3038eb 100644
+index 8e2afa1..894eb8c 100644
 --- a/Makefile.cross
 +++ b/Makefile.cross
 @@ -1,7 +1,7 @@
@@ -7,16 +7,16 @@ index 8e2afa1..f3038eb 100644
  
  cross-tools:	cross-includes cross-binutils cross-gcc cross-lib
 -cross-distrib:	cross-tools cross-bin cross-share cross-sys cross-etc-root-var
-+cross-distrib:	cross-tools cross-bin cross-share cross-distrib2 cross-sys cross-etc-root-var
++cross-build:	cross-tools cross-bin cross-share cross-sys cross-etc-root-var cross-distrib
  # cross-gnu \
  
  # Have to compute TARGET_ARCH directly in the Makefile, for .if tests involving
-@@ -345,6 +345,20 @@ cross-share:   ${CROSSOBJ}
- 		${MAKE} depend all install); \
- 	done
+@@ -364,6 +364,20 @@ cross-etc-root-var:	${CROSSOBJ}
+ 	    DESTDIR=${CROSSDIR} \
+ 	    ${MAKE} distribution-etc-root-var)
  
 +# XXX Append `-j1' to ${MAKEFLAGS} to force serialized make execution
-+cross-distrib2:   ${CROSSOBJ}
++cross-distrib:   ${CROSSOBJ}
 +	MACHINE=${TARGET} \
 +	    MACHINE_ARCH=${TARGET_ARCH} MACHINE_CPU=${TARGET_CPU}; \
 +	export MACHINE MACHINE_ARCH MACHINE_CPU; \
@@ -29,9 +29,9 @@ index 8e2afa1..f3038eb 100644
 +		${MAKE} depend all install); \
 +	done
 +
- cross-sys:   ${CROSSOBJ}
- 	MACHINE=${TARGET} \
- 	    MACHINE_ARCH=${TARGET_ARCH} MACHINE_CPU=${TARGET_CPU}; \
+ cross-depend:
+ 	@(cd ${.CURDIR} && \
+ 	    BSDOBJDIR=${CROSSDIR}/usr/obj \
 diff --git a/distrib/amd64/common/Makefile.inc b/distrib/amd64/common/Makefile.inc
 index 8a2bfea..2b2bc24 100644
 --- a/distrib/amd64/common/Makefile.inc
