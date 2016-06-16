@@ -1,0 +1,53 @@
+diff --git a/Makefile.cross b/Makefile.cross
+index 8e2afa1..f3038eb 100644
+--- a/Makefile.cross
++++ b/Makefile.cross
+@@ -1,7 +1,7 @@
+ # $OpenBSD: Makefile.cross,v 1.85 2016/05/11 21:52:48 deraadt Exp $
+ 
+ cross-tools:	cross-includes cross-binutils cross-gcc cross-lib
+-cross-distrib:	cross-tools cross-bin cross-share cross-sys cross-etc-root-var
++cross-distrib:	cross-tools cross-bin cross-share cross-distrib2 cross-sys cross-etc-root-var
+ # cross-gnu \
+ 
+ # Have to compute TARGET_ARCH directly in the Makefile, for .if tests involving
+@@ -345,6 +345,20 @@ cross-share:   ${CROSSOBJ}
+ 		${MAKE} depend all install); \
+ 	done
+ 
++# XXX Append `-j1' to ${MAKEFLAGS} to force serialized make execution
++cross-distrib2:   ${CROSSOBJ}
++	MACHINE=${TARGET} \
++	    MACHINE_ARCH=${TARGET_ARCH} MACHINE_CPU=${TARGET_CPU}; \
++	export MACHINE MACHINE_ARCH MACHINE_CPU; \
++	for i in distrib; do \
++	    (cd ${.CURDIR}/$$i; \
++	        eval ${CROSSENV} MAKEOBJDIR=obj.${MACHINE}.${TARGET} \
++		MAKEFLAGS=\"${MAKEFLAGS} -j1\" \
++		SKIPDIR=\"${NO_CROSS}\" \
++		DESTDIR=${CROSSDIR} \
++		${MAKE} depend all install); \
++	done
++
+ cross-sys:   ${CROSSOBJ}
+ 	MACHINE=${TARGET} \
+ 	    MACHINE_ARCH=${TARGET_ARCH} MACHINE_CPU=${TARGET_CPU}; \
+diff --git a/distrib/amd64/common/Makefile.inc b/distrib/amd64/common/Makefile.inc
+index 8a2bfea..2b2bc24 100644
+--- a/distrib/amd64/common/Makefile.inc
++++ b/distrib/amd64/common/Makefile.inc
+@@ -122,8 +122,14 @@ install:
+ .endif	# RELEASEDIR
+ 
+ ${CBIN}.mk ${CBIN}.cache ${CBIN}.c: ${CRUNCHCONF}
++.ifdef TARGET
+ 	crunchgen -E -D ${BSDSRCDIR} -L ${DESTDIR}/usr/lib \
++	-O obj.${MACHINE}.${TARGET} \
+ 	-c ${CBIN}.c -e ${CBIN} -m ${CBIN}.mk ${CRUNCHCONF}
++.else
++	crunchgen -E -D ${BSDSRCDIR} -L ${DESTDIR}/usr/lib \
++	-c ${CBIN}.c -e ${CBIN} -m ${CBIN}.mk ${CRUNCHCONF}
++.endif
+ 
+ ${CBIN}: ${CBIN}.mk ${CBIN}.cache ${CBIN}.c
+ 	${MAKE} -f ${CBIN}.mk SRCLIBDIR=${.CURDIR}/../../../lib all
