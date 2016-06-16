@@ -212,7 +212,7 @@ buildenv() {
 
 	# XXX ${CROSSDIR} and ${TARGET} should not be used in the tree
 	# XXX ${BSDSRCDIR} is used in a few places
-	_build_env="/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin BSDSRCDIR=$s"
+	_build_env="/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin BSDSRCDIR=$s"
 	_build_make="/usr/bin/make -m $s/share/mk ${_build_make_njobs}"
 
 	# check dirs
